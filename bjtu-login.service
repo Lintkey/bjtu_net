@@ -5,7 +5,7 @@ PartOf=bjtu-needs-auth.target
 [Service]
 Type=oneshot
 Environment="ACCOUNT=your account"
-Environment="PASSWORD='your password'"
+Environment="PASSWORD=your password"
 Environment="ENABLE_NOTIFY=1"
 ExecStart=%h/.local/bin/bjtu-auth.sh login
 

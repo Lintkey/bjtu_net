@@ -68,7 +68,7 @@ check_drcom_network() {
     log_message "Info: 正在检测校园网连接..."
     
     while [ $attempt -le $max_attempts ]; do
-        response=$(curl -s --max-time 4 "http://${DOMAIN}:${HTTP_PORT}${ONLINE_CHECK_PATH}" 2>/dev/null)
+        response=$(curl -s --max-time 4 "https://${DOMAIN}:${HTTPS_PORT}${ONLINE_CHECK_PATH}" 2>/dev/null)
         result=$(echo "$response" | grep -o '"result":[0-9]*' | cut -d: -f2)
         if [ -n "$result" ]; then
             log_message "Info: 检测到校园网连接"
