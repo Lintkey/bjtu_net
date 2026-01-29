@@ -39,7 +39,7 @@ check_online_status() {
     local response result
     response=$(curl -s --max-time 3 "https://${DOMAIN}:${HTTPS_PORT}${ONLINE_CHECK_PATH}" 2>/dev/null)
     while [ -z "$response" ]; do
-        log_message "在线状态检查: 请求失败"
+        log_message "Info: online_chek无响应"
         sleep 1
         response=$(curl -s --max-time 3 "https://${DOMAIN}:${HTTPS_PORT}${ONLINE_CHECK_PATH}" 2>/dev/null)
     done    
@@ -47,31 +47,31 @@ check_online_status() {
     result=$(echo "$response" | grep -o '"result":[0-9]*' | cut -d: -f2)
     if [ -n "$result" ]; then
         if [ "$result" -ne 0 ]; then
-            log_message "在线状态检查: 已登录 (result=${result})"
+            log_message "Info: online_check result=${result}"
             return 0
         else
-            log_message "在线状态检查: 未登录 (result=${result})"
+            log_message "Info: online_check result=${result}"
             return 1
         fi
     else
-        log_message "在线状态检查: 无法解析响应"
+        log_message "Info: 无法解析online_check响应"
         return 1
     fi
 }
 
-# 检测校园网连接 (10次循环重试)
+# 检测校园网连接
 check_drcom_network() {
     local max_attempts=10
     local attempt=1
     local connection result
-    log_message "正在检测校园网连接..."
+    log_message "Info: 正在检测校园网连接..."
     
     while [ $attempt -le $max_attempts ]; do
         response=$(curl -s --max-time 4 "https://${DOMAIN}:${HTTPS_PORT}${ONLINE_CHECK_PATH}" 2>/dev/null)
         result=$(echo "$response" | grep -o '"result":[0-9]*' | cut -d: -f2)
         if [ -n "$result" ]; then
             if [ "$result" -ne 0 ]; then
-                log_message "检测到校园网连接"
+                log_message "Info: 检测到校园网连接"
                 return 0
             fi
         fi
@@ -80,7 +80,7 @@ check_drcom_network() {
         attempt=$((attempt + 1))
     done
 
-    log_message "未检测到校园网连接"
+    log_message "Info: 未检测到校园网连接"
     return 1
 }
 
@@ -90,21 +90,21 @@ login_to_drcom() {
     local retry_count=0
     
     if check_online_status; then
-        log_message "当前已在线，无需登录" "normal"
+        log_message "Info: 当前已在线，无需登录" "normal"
         return 0
     fi
     
     while [ $retry_count -lt $max_retries ]; do
-        log_message "正在登录校园网 (第$((retry_count + 1))次尝试)..."
+        log_message "Info: 正在登录校园网 (第$((retry_count + 1))次尝试)..."
         
         curl -s --max-time 3 "https://${DOMAIN}:${HTTPS_PORT}${LOGIN_PATH}&login_method=1&user_account=${ACCOUNT}&user_password=${PASSWORD}" >/dev/null 2>&1
         sleep 2
         
         if check_online_status; then
-            log_message "登录成功" "normal"
+            log_message "Info: 登录成功" "normal"
             return 0
         else
-            log_message "登录失败，正在重试..."
+            log_message "Info: 登录失败，正在重试..."
             retry_count=$((retry_count + 1))
         fi
     done
@@ -113,18 +113,18 @@ login_to_drcom() {
     return 1
 }
 
-# 监控逻辑 (与 systemd target 交互)
+# 监控
 monitor_mode() {
-    log_message "监控服务启动..."
+    log_message "Info: 监控服务启动..."
     while true; do
         if ! check_drcom_network; then
-            log_message "确认未连接校园网，退出监控"
+            log_message "Info: 确认未连接校园网，退出监控"
             systemctl --user stop bjtu-needs-auth.target
             exit 0
         fi
         if ! check_online_status; then
             if ! systemctl --user is-active --quiet bjtu-needs-auth.target; then
-                log_message "检测到断开，启动 Target"
+                log_message "Info: 检测到未登录校园网，唤醒登录服务"
                 systemctl --user start bjtu-needs-auth.target
             fi
         else
