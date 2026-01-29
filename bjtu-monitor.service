@@ -1,0 +1,12 @@
+[Unit]
+Description=BJTU Connection Status Monitor
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/bjtu-auth.sh monitor
+Restart=always
+RestartSec=20
+
+[Install]
+WantedBy=default.target
