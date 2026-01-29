@@ -2,6 +2,7 @@
 
 # 配置参数
 DOMAIN="login.bjtu.edu.cn"
+HTTP_PORT=801
 HTTPS_PORT=802
 LOGIN_PATH="/eportal/portal/login?callback=drcom"
 ONLINE_CHECK_PATH="/eportal/portal/online_list?callback=drcom"
@@ -67,13 +68,11 @@ check_drcom_network() {
     log_message "Info: 正在检测校园网连接..."
     
     while [ $attempt -le $max_attempts ]; do
-        response=$(curl -s --max-time 4 "https://${DOMAIN}:${HTTPS_PORT}${ONLINE_CHECK_PATH}" 2>/dev/null)
+        response=$(curl -s --max-time 4 "http://${DOMAIN}:${HTTP_PORT}${ONLINE_CHECK_PATH}" 2>/dev/null)
         result=$(echo "$response" | grep -o '"result":[0-9]*' | cut -d: -f2)
         if [ -n "$result" ]; then
-            if [ "$result" -ne 0 ]; then
-                log_message "Info: 检测到校园网连接"
-                return 0
-            fi
+            log_message "Info: 检测到校园网连接"
+            return 0
         fi
         [ $((attempt % 5)) -eq 0 ] && log_message "第${attempt}次检测: 未连接到校园网"
         sleep 2
@@ -140,5 +139,5 @@ check_dependencies
 case "$1" in
     login)   login_to_drcom ;;
     monitor) monitor_mode ;;
-    *)       exit 1 ;;
+    *)       ;;
 esac
