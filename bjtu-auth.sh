@@ -5,7 +5,6 @@ DOMAIN="login.bjtu.edu.cn"
 HTTPS_PORT=802
 LOGIN_PATH="/eportal/portal/login?callback=drcom"
 ONLINE_CHECK_PATH="/eportal/portal/online_list?callback=drcom"
-CONNECTIONS_LIST=("web.wlan.bjtu")
 ENABLE_NOTIFY=${ENABLE_NOTIFY:-0}
 
 # 日志函数
@@ -19,6 +18,7 @@ log_message() {
     fi
 }
 
+dependencies=('curl')
 # 检查依赖
 check_dependencies() {
     if [ ! command -v notify-send > /dev/null 2>&1 ] || [ -z "$DISPLAY" ]; then
@@ -26,7 +26,7 @@ check_dependencies() {
         log_message "Warn: 桌面通知不可用，已禁用桌面通知"
     fi
     
-    for cmd in nmcli curl; do
+    for cmd in "${dependencies[*]}"; do
         if ! command -v $cmd > /dev/null 2>&1; then
             log_message "Error: 缺少依赖 $cmd" "critical"
             exit 1
@@ -63,21 +63,23 @@ check_online_status() {
 check_drcom_network() {
     local max_attempts=10
     local attempt=1
-    local connection
+    local connection result
     log_message "正在检测校园网连接..."
     
     while [ $attempt -le $max_attempts ]; do
-        connection=$(nmcli --fields=CONNECTION device status 2>/dev/null)
-        for conn in "${CONNECTIONS_LIST[@]}"; do
-            if echo "$connection" | grep -q "$conn"; then
+        response=$(curl -s --max-time 4 "https://${DOMAIN}:${HTTPS_PORT}${ONLINE_CHECK_PATH}" 2>/dev/null)
+        result=$(echo "$response" | grep -o '"result":[0-9]*' | cut -d: -f2)
+        if [ -n "$result" ]; then
+            if [ "$result" -ne 0 ]; then
                 log_message "检测到校园网连接"
                 return 0
             fi
-        done
+        fi
         [ $((attempt % 5)) -eq 0 ] && log_message "第${attempt}次检测: 未连接到校园网"
         sleep 2
         attempt=$((attempt + 1))
     done
+
     log_message "未检测到校园网连接"
     return 1
 }
