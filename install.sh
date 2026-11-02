@@ -4,22 +4,26 @@ SCRIPT_DEST="$HOME/.local/bin"
 SERVICE_DEST="$HOME/.config/systemd/user"
 ENV_FILE="$HOME/.config/bjtu-net.env"
 
-if [ -z "$1" ]; then
-    echo "用法: $0 <账号> [密码]"
-    exit 1
-fi
-
 ACCOUNT="$1"
 PASSWORD="$2"
 
+if [ -z "$ACCOUNT" ]; then
+    printf '账号: '
+    read -r ACCOUNT
+fi
+
 if [ -z "$PASSWORD" ]; then
-    printf '密码: ' >&2
     if [ -t 0 ]; then
+        stty_state=$(stty -g)
         stty -echo
+        trap 'stty "$stty_state"' INT TERM
+        printf '密码: '
         read -r PASSWORD
-        stty echo
-        echo >&2
+        stty "$stty_state"
+        trap - INT TERM
+        echo
     else
+        printf '密码: '
         read -r PASSWORD
     fi
 fi
