@@ -18,7 +18,13 @@ sh ./bjtu_login.sh '账号' '密码'
 
 ### # 配合 `systemd`，自动登录+断线重连
 
-克隆该仓库，修改 `bjtu-login.service` 中的账号密码参数，运行 `install.sh` 脚本，会安装至当前用户的服务中。
+克隆该仓库，运行安装脚本并传入账号密码：
+
+```sh
+./install.sh '账号' '密码'
+```
+
+不传密码时会提示输入。安装至当前用户的服务中。
 
 卸载直接删除对应文件即可，记得 `systemctl --user daemon-reload`。
 
